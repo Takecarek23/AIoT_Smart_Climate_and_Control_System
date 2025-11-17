@@ -1,6 +1,5 @@
 
 #include "task_core_iot.h"
-#include "coreiot.h"
 constexpr uint32_t MAX_MESSAGE_SIZE = 1024U;
 #define LED_PIN 48
 
@@ -18,7 +17,7 @@ constexpr uint16_t BLINKING_INTERVAL_MS_MIN = 10U;
 constexpr uint16_t BLINKING_INTERVAL_MS_MAX = 60000U;
 volatile uint16_t blinkingInterval = 1000U;
 
-constexpr int16_t telemetrySendInterval = 10000U;
+constexpr int16_t telemetrySendInterval = 1000U;
 uint32_t lastTelemetrySend = 0U;
 
 constexpr std::array<const char *, 2U> SHARED_ATTRIBUTES_LIST = {
@@ -53,16 +52,38 @@ RPC_Response setLedSwitchValue(const RPC_Data &data)
 {
     Serial.println("Received Switch state");
     bool newState = data;
+    // // xin lấy token 
+    // if (xSemaphoreTake(xBinarySemaphoreInternet, (TickType_t)10) == pdTRUE) {
+    //   // Đã lấy được quyền -> Điều khiển LED
+    //   ledState = newState;
+    //   digitalWrite(LED_PIN, ledState);
+      
+    //   // Trả Token lại ngay
+    //   // Trả Token lại để người khác dùng
+    //   xSemaphoreGive(xBinarySemaphoreInternet); 
+    // }
     Serial.print("Switch state change: ");
     Serial.println(newState);
     ledState = newState; // Cập nhật biến trạng thái (để code khác biết)
-    digitalWrite(LED_PIN, ledState); // ĐIỀU KHIỂN LED NGAY LẬP TỨC
+    //digitalWrite(LED_PIN, ledState); // ĐIỀU KHIỂN LED NGAY LẬP TỨC
     tb.sendAttributeData(LED_STATE_ATTR, ledState); // Cập nhật trạng thái LED lên server
     return RPC_Response("setLedSwitchValue", newState);
 }
 
-const std::array<RPC_Callback, 1U> callbacks = {
-    RPC_Callback{"setLedSwitchValue", setLedSwitchValue}};
+// Mới thêm
+RPC_Response getLedState(const RPC_Data &data)
+{
+    return RPC_Response("ledState", ledState);
+}
+
+// const std::array<RPC_Callback, 2U> callbacks = {
+//     RPC_Callback{"setLedSwitchValue", setLedSwitchValue},
+//     RPC_Callback{"getLedState", getLedState}};
+
+const std::array<RPC_Callback, 2U> callbacks = {
+    RPC_Callback{"led_status", setLedSwitchValue}, // <-- Sửa tên thành "led_status"
+    RPC_Callback{"led_status", getLedState}      // <-- Sửa tên thành "led_status"
+};
 
 const Shared_Attribute_Callback attributes_callback(&processSharedAttributes, SHARED_ATTRIBUTES_LIST.cbegin(), SHARED_ATTRIBUTES_LIST.cend());
 const Attribute_Request_Callback attribute_shared_request_callback(&processSharedAttributes, SHARED_ATTRIBUTES_LIST.cbegin(), SHARED_ATTRIBUTES_LIST.cend());
@@ -99,13 +120,13 @@ void CORE_IOT_reconnect()
         Serial.println("Subscribing for RPC...");
         if (!tb.RPC_Subscribe(callbacks.cbegin(), callbacks.cend()))
         {
-            // Serial.println("Failed to subscribe for RPC");
+            Serial.println("Failed to subscribe for RPC");
             return;
         }
 
         if (!tb.Shared_Attributes_Subscribe(attributes_callback))
         {
-            // Serial.println("Failed to subscribe for shared attribute updates");
+            Serial.println("Failed to subscribe for shared attribute updates");
             return;
         }
 
@@ -124,34 +145,6 @@ void CORE_IOT_reconnect()
     }
 }
 
-// void coreiot_task(void *pvParameters)
-// {
-//   (void)pvParameters; // Tắt cảnh báo
-
-//   Serial.println("CoreIOT Task: Dang cho WiFi...");
-//   vTaskDelay(pdMS_TO_TICKS(10000)); 
-
-//   Serial.println("CoreIOT Task: Bat dau.");
-
-//   while (1)
-//   {
-//     if (!tb.connected())
-//     {
-//       CORE_IOT_reconnect();
-//     }
-//     tb.loop();
-//     if (tb.connected() && (millis() - lastTelemetrySend > telemetrySendInterval))
-//     {
-//         Serial.println("Sending telemetry data...");
-//       tb.sendTelemetryData("led_status", ledState);
-//       tb.sendTelemetryData("temperature", glob_temperature);
-//       tb.sendTelemetryData("humidity", glob_humidity);
-//       lastTelemetrySend = millis();
-//     }
-//     vTaskDelay(pdMS_TO_TICKS(10)); 
-//   }
-// }
-
 void coreiot_task(void *pvParameters)
 {
   (void)pvParameters; // Tắt cảnh báo
@@ -163,15 +156,47 @@ void coreiot_task(void *pvParameters)
 
   while (1)
   {
-    CORE_IOT_reconnect(); 
-
-    if (tb.connected())
+    // 1. Tự kết nối lại (nếu cần)
+    if (!tb.connected())
+    {
+      CORE_IOT_reconnect();
+    }
+    
+    // 2. Luôn gọi tb.loop() để duy trì kết nối và nhận RPC
+    tb.loop();
+    
+    // 3. Chỉ gửi dữ liệu 10 giây một lần
+    if (tb.connected() && (millis() - lastTelemetrySend > telemetrySendInterval))
     {
       tb.sendTelemetryData("led_status", ledState);
       tb.sendTelemetryData("temperature", glob_temperature);
       tb.sendTelemetryData("humidity", glob_humidity);
+      lastTelemetrySend = millis();
     }
-
-    vTaskDelay(pdMS_TO_TICKS(1000)); 
+    
+    // 4. Ngủ rất ngắn (10ms) để Task chạy liên tục
+    vTaskDelay(pdMS_TO_TICKS(10)); 
   }
 }
+
+// void coreiot_task(void *pvParameters)
+// {
+//   (void)pvParameters; // Tắt cảnh báo
+
+//   Serial.println("CoreIOT Task: Dang cho WiFi...");
+//   vTaskDelay(pdMS_TO_TICKS(10000)); 
+
+//   Serial.println("CoreIOT Task: Bat dau.");
+
+//   while (1)
+//   {
+//     if (tb.connected())
+//     {
+//       tb.sendTelemetryData("led_status", ledState);
+//       tb.sendTelemetryData("temperature", glob_temperature);
+//       tb.sendTelemetryData("humidity", glob_humidity);
+//     }
+    
+//     vTaskDelay(pdMS_TO_TICKS(1000)); 
+//   }
+// }

@@ -11,4 +11,6 @@ void CORE_IOT_sendata(String mode, String feed, String data);
 void CORE_IOT_reconnect();
 void coreiot_task(void *pvParameters);
 
+extern volatile bool ledState;
+
 #endif
