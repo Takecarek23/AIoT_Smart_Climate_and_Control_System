@@ -1,26 +1,48 @@
 #include "neo_blinky.h"
-
+#include "global.h"
 
 void neo_blinky(void *pvParameters){
 
+    // Khởi tạo đối tượng NeoPixel
     Adafruit_NeoPixel strip(LED_COUNT, NEO_PIN, NEO_GRB + NEO_KHZ800);
-    strip.begin();
-    // Set all pixels to off to start
-    strip.clear();
-    strip.show();
+    
+    if (xSemaphoreTake(xNeoPixelMutex, portMAX_DELAY) == pdTRUE) {
+        strip.begin();
+        strip.clear();
+        strip.show(); // Tắt hết đèn ban đầu
+        xSemaphoreGive(xNeoPixelMutex);
+    }
 
-    while(1) {                          
-        strip.setPixelColor(0, strip.Color(255, 0, 0)); // Set pixel 0 to red
-        strip.show(); // Update the strip
+    while(1) {                  
 
-        // Wait for 500 milliseconds
-        vTaskDelay(500);
+        if (xSemaphoreTake(xNeoPixelMutex, portMAX_DELAY) == pdTRUE) {
 
-        // Set the pixel to off
-        strip.setPixelColor(0, strip.Color(0, 0, 0)); // Turn pixel 0 off
-        strip.show(); // Update the strip
+            uint32_t color = strip.Color(0, 0, 0); // Mặc định tắt
 
-        // Wait for another 500 milliseconds
-        vTaskDelay(500);
+            if (glob_humidity < 40) {
+                color = strip.Color(255, 0, 0);       // Đỏ (Rất khô)
+            } else if (glob_humidity < 50){
+                color = strip.Color(255, 165, 0);     // Cam
+            } else if (glob_humidity < 60){
+                color = strip.Color(255, 255, 0);     // Vàng
+            } else if (glob_humidity < 70){
+                color = strip.Color(0, 128, 0);       // Xanh lá (Lý tưởng)
+            } else if (glob_humidity < 80){
+                color = strip.Color(0, 0, 255);       // Xanh dương
+            } else if (glob_humidity < 90){
+                color = strip.Color(75, 0, 130);      // Chàm
+            } else {
+                color = strip.Color(128, 0, 128);     // Tím (Rất ẩm)
+            }
+
+            for(int i=0; i<LED_COUNT; i++) {
+                strip.setPixelColor(i, color);
+            }
+            strip.show(); 
+
+            xSemaphoreGive(xNeoPixelMutex);
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
