@@ -19,10 +19,10 @@ void led_blinky(void *pvParameters) {
         // TRƯỜNG HỢP 1: Mát mẻ (< 28°C)
         // Hành động: Nháy nhanh 2 lần (500ms)
         if (glob_temperature < 28.0) {
-            safe_led_control(HIGH, 2000);
-            safe_led_control(LOW, 2000);
-            safe_led_control(HIGH, 2000);
-            safe_led_control(LOW, 2000);
+            safe_led_control(HIGH, 500);
+            safe_led_control(LOW, 500);
+            safe_led_control(HIGH, 500);
+            safe_led_control(LOW, 500);
         } 
         // TRƯỜNG HỢP 2: Ấm (28°C - 29°C)
         // Hành động: 1 Nhanh (500ms) + 1 Chậm (1000ms)
@@ -42,6 +42,6 @@ void led_blinky(void *pvParameters) {
         }
 
         // Nghỉ 2 giây trước chu kỳ tiếp theo
-        vTaskDelay(pdMS_TO_TICKS(2000));
+        vTaskDelay(pdMS_TO_TICKS(1500));
     }
 }
