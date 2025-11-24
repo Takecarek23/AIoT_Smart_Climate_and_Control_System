@@ -8,6 +8,7 @@
 #include <ArduinoJson.h>
 #include <ElegantOTA.h>
 #include <task_handler.h>
+#include <ESPmDNS.h>
 
 extern AsyncWebServer server;
 extern AsyncWebSocket ws;
