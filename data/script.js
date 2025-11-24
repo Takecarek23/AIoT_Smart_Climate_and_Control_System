@@ -1,11 +1,24 @@
-// ==================== WEBSOCKET ====================
+// ==================== WEBSOCKET & GLOBAL VARS ====================
 var gateway = `ws://${window.location.hostname}/ws`;
 var websocket;
+// Khai báo biến toàn cục
+var gaugeTemp; 
+var gaugeHumi;
 
+// Chạy khi trang tải xong
 window.addEventListener('load', onLoad);
 
 function onLoad(event) {
     initWebSocket();
+    initGauges(); // Gọi hàm khởi tạo đồng hồ
+}
+
+function initWebSocket() {
+    console.log('Trying to open a WebSocket connection…');
+    websocket = new WebSocket(gateway);
+    websocket.onopen = onOpen;
+    websocket.onclose = onClose;
+    websocket.onmessage = onMessage;
 }
 
 function onOpen(event) {
@@ -17,12 +30,24 @@ function onClose(event) {
     setTimeout(initWebSocket, 2000);
 }
 
-function initWebSocket() {
-    console.log('Trying to open a WebSocket connection…');
-    websocket = new WebSocket(gateway);
-    websocket.onopen = onOpen;
-    websocket.onclose = onClose;
-    websocket.onmessage = onMessage;
+function onMessage(event) {
+    console.log("📩 Nhận:", event.data);
+    try {
+        var data = JSON.parse(event.data);
+
+        // Cập nhật Đồng hồ Nhiệt độ (Kiểm tra biến toàn cục đã sẵn sàng chưa)
+        if (data.temp !== undefined && gaugeTemp) {
+            gaugeTemp.refresh(data.temp);
+        }
+        
+        // Cập nhật Đồng hồ Độ ẩm
+        if (data.humi !== undefined && gaugeHumi) {
+            gaugeHumi.refresh(data.humi);
+        }
+
+    } catch (e) {
+        console.warn("Không phải JSON hợp lệ hoặc lỗi update:", e);
+    }
 }
 
 function Send_Data(data) {
@@ -35,17 +60,6 @@ function Send_Data(data) {
     }
 }
 
-function onMessage(event) {
-    console.log("📩 Nhận:", event.data);
-    try {
-        var data = JSON.parse(event.data);
-        // Có thể thêm xử lý riêng nếu cần (ví dụ cập nhật trạng thái)
-    } catch (e) {
-        console.warn("Không phải JSON hợp lệ:", event.data);
-    }
-}
-
-
 // ==================== UI NAVIGATION ====================
 let relayList = [];
 let deleteTarget = null;
@@ -54,15 +68,14 @@ function showSection(id, event) {
     document.querySelectorAll('.section').forEach(sec => sec.style.display = 'none');
     document.getElementById(id).style.display = id === 'settings' ? 'flex' : 'block';
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-    event.currentTarget.classList.add('active');
+    if(event) event.currentTarget.classList.add('active');
 }
 
-
-// ==================== HOME GAUGES ====================
-window.onload = function () {
-    const gaugeTemp = new JustGage({
+// ==================== HOME GAUGES (QUAN TRỌNG: ĐÃ SỬA) ====================
+function initGauges() {
+    gaugeTemp = new JustGage({
         id: "gauge_temp",
-        value: 26,
+        value: 0, // Giá trị mặc định
         min: -10,
         max: 50,
         donut: true,
@@ -73,9 +86,9 @@ window.onload = function () {
         levelColors: ["#00BCD4", "#4CAF50", "#FFC107", "#F44336"]
     });
 
-    const gaugeHumi = new JustGage({
+    gaugeHumi = new JustGage({
         id: "gauge_humi",
-        value: 60,
+        value: 0, // Giá trị mặc định
         min: 0,
         max: 100,
         donut: true,
@@ -85,13 +98,7 @@ window.onload = function () {
         levelColorsGradient: true,
         levelColors: ["#42A5F5", "#00BCD4", "#0288D1"]
     });
-
-    setInterval(() => {
-        gaugeTemp.refresh(Math.floor(Math.random() * 15) + 20);
-        gaugeHumi.refresh(Math.floor(Math.random() * 40) + 40);
-    }, 3000);
-};
-
+}
 
 // ==================== DEVICE FUNCTIONS ====================
 function openAddRelayDialog() {
@@ -155,8 +162,7 @@ function confirmDelete() {
     closeConfirmDelete();
 }
 
-
-// ==================== SETTINGS FORM (BỔ SUNG) ====================
+// ==================== SETTINGS FORM ====================
 document.getElementById("settingsForm").addEventListener("submit", function (e) {
     e.preventDefault();
 

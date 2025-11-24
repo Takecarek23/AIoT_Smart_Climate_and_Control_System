@@ -19,6 +19,9 @@ void setup()
   check_info_File(0);
   //Delete_info_File();
   setup_monitoring_system();
+
+  startAP();
+
   //  Semaphore 
   xBinarySemaphoreInternet = xSemaphoreCreateBinary();
   xLedMutex = xSemaphoreCreateMutex();

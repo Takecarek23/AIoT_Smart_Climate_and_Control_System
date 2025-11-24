@@ -5,6 +5,7 @@
 #include "DHT20.h"
 #include "global.h"
 #include "freertos/semphr.h"
+#include "task_webserver.h"
 void temp_humi_monitor(void *pvParameters);
 void setup_monitoring_system();
 

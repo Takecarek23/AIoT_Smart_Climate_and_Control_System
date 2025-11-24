@@ -51,6 +51,20 @@ void temp_humi_monitor(void *pvParameters){
             snprintf(buffer, sizeof(buffer), "T:%.1f H:%.1f%%", temperature, humidity);
             lcd.print(buffer);
 
+            if (!isnan(glob_temperature) && !isnan(glob_humidity)) {
+                // 2. Tạo chuỗi JSON
+                // Format: {"temp": 28.5, "humi": 65.0}
+                String json = "{\"temp\":";
+                json += String(glob_temperature, 1);
+                json += ",\"humi\":";
+                json += String(glob_humidity, 1);
+                json += "}";
+
+                // 3. Gửi lên Web Server
+                Webserver_sendata(json); 
+                Serial.println(json); // Debug
+            }
+
             // In các cảnh báo 
             lcd.setCursor(0, 1);
             if (temperature >= 40.0) {
