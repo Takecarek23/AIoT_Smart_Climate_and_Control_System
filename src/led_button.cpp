@@ -1,16 +1,28 @@
+// #include "led_button.h"
+
+// void task_monitor_button(void *pvParameters)
+// {
+//     pinMode(LED_PIN, OUTPUT);
+//     while (1) {
+//         // Check if button is pressed (active-low)
+//         if (xSemaphoreTake(xBinarySemaphoreInternet, (TickType_t)10) == pdTRUE) {
+//             digitalWrite(LED_PIN, ledState);
+//             xSemaphoreGive(xBinarySemaphoreInternet); 
+//         }
+//         vTaskDelay(pdMS_TO_TICKS(10));
+//     }
+// }
+
+// // Khi nhấn nút thì đèn sáng, không thì led blinky cứ nằm chờ
+
 #include "led_button.h"
 
-void task_monitor_button(void *pvParameters)
-{
-    pinMode(LED_PIN, OUTPUT);
+void task_monitor_button(void *pvParameters) {
     while (1) {
-        // Check if button is pressed (active-low)
-        if (xSemaphoreTake(xBinarySemaphoreInternet, (TickType_t)10) == pdTRUE) {
-            digitalWrite(LED_PIN, ledState);
-            xSemaphoreGive(xBinarySemaphoreInternet); 
-        }
-        vTaskDelay(pdMS_TO_TICKS(10));
+        analogWrite(GPIO_NUM_6, 150);
+        Serial.println("Đã chạy");
+        delay(5000);
+        analogWrite(GPIO_NUM_6, 0);
+        delay(2000);
     }
 }
-
-// Khi nhấn nút thì đèn sáng, không thì led blinky cứ nằm chờ

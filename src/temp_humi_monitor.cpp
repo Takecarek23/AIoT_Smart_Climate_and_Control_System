@@ -85,3 +85,5 @@ void temp_humi_monitor(void *pvParameters){
         vTaskDelay(pdMS_TO_TICKS(2000));
     }
 }
+
+void Webserver_send_sensor(float temp, float humi);
