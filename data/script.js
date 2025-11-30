@@ -34,7 +34,6 @@ function onMessage(event) {
     console.log("📩 Nhận:", event.data);
     try {
         var data = JSON.parse(event.data);
-
         // Cập nhật Đồng hồ Nhiệt độ (Kiểm tra biến toàn cục đã sẵn sàng chưa)
         if (data.temp !== undefined && gaugeTemp) {
             gaugeTemp.refresh(data.temp);
@@ -44,7 +43,6 @@ function onMessage(event) {
         if (data.humi !== undefined && gaugeHumi) {
             gaugeHumi.refresh(data.humi);
         }
-
     } catch (e) {
         console.warn("Không phải JSON hợp lệ hoặc lỗi update:", e);
     }
