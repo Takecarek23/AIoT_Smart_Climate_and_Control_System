@@ -8,10 +8,12 @@ Arduino_MQTT_Client mqttClient(wifiClient);
 ThingsBoard tb(mqttClient, MAX_MESSAGE_SIZE);
 
 constexpr char LED_STATE_ATTR[] = "ledState";
+constexpr char FAN_STATE_ATTR[] = "fanState";
 constexpr char BLINKING_INTERVAL_ATTR[] = "blinkingInterval";
 
 volatile int ledMode = 0;
 volatile bool ledState = false;
+volatile bool fanState = false;
 
 constexpr uint16_t BLINKING_INTERVAL_MS_MIN = 10U;
 constexpr uint16_t BLINKING_INTERVAL_MS_MAX = 60000U;
@@ -26,48 +28,67 @@ constexpr std::array<const char *, 2U> SHARED_ATTRIBUTES_LIST = {
 
 void processSharedAttributes(const Shared_Attribute_Data &data)
 {
-    for (auto it = data.begin(); it != data.end(); ++it)
-    {
-        if (strcmp(it->key().c_str(), BLINKING_INTERVAL_ATTR) == 0)
-        {
-            const uint16_t new_interval = it->value().as<uint16_t>();
-            if (new_interval >= BLINKING_INTERVAL_MS_MIN && new_interval <= BLINKING_INTERVAL_MS_MAX)
-            {
-                blinkingInterval = new_interval;
-                Serial.print("Blinking interval is set to: ");
-                Serial.println(new_interval);
-            }
-        }
-        if (strcmp(it->key().c_str(), LED_STATE_ATTR) == 0)
-        {
-            ledState = it->value().as<bool>();
-            digitalWrite(LED_PIN, ledState);
-            Serial.print("LED state is set to: ");
-            Serial.println(ledState);
-        }
-    }
+    // for (auto it = data.begin(); it != data.end(); ++it)
+    // {
+    //     if (strcmp(it->key().c_str(), BLINKING_INTERVAL_ATTR) == 0)
+    //     {
+    //         const uint16_t new_interval = it->value().as<uint16_t>();
+    //         if (new_interval >= BLINKING_INTERVAL_MS_MIN && new_interval <= BLINKING_INTERVAL_MS_MAX)
+    //         {
+    //             blinkingInterval = new_interval;
+    //             Serial.print("Blinking interval is set to: ");
+    //             Serial.println(new_interval);
+    //         }
+    //     }
+    //     if (strcmp(it->key().c_str(), LED_STATE_ATTR) == 0)
+    //     {
+    //         ledState = it->value().as<bool>();
+    //         digitalWrite(LED_PIN, ledState);
+    //         Serial.print("LED state is set to: ");
+    //         Serial.println(ledState);
+    //     }
+    //     if (strcmp(it->key().c_str(), FAN_STATE_ATTR) == 0)
+    //     {
+    //         fanState = it->value().as<bool>();
+    //         digitalWrite(GPIO_NUM_6, fanState);
+    //         Serial.print("FAN state is set to: ");
+    //         Serial.println(fanState);
+    //     }
+
+    // }
 }
 
 RPC_Response setLedSwitchValue(const RPC_Data &data)
 {
-    Serial.println("Received Switch state");
+    Serial.println("Received Led Switch state");
     bool newState = data;
     // // xin lấy token 
-    // if (xSemaphoreTake(xBinarySemaphoreInternet, (TickType_t)10) == pdTRUE) {
-    //   // Đã lấy được quyền -> Điều khiển LED
-    //   ledState = newState;
-    //   digitalWrite(LED_PIN, ledState);
+    if (xSemaphoreTake(xBinarySemaphoreInternet, (TickType_t)10) == pdTRUE) {
+      // Đã lấy được quyền -> Điều khiển LED
+      ledState = newState;
+      digitalWrite(LED_PIN, ledState);
       
-    //   // Trả Token lại ngay
-    //   // Trả Token lại để người khác dùng
-    //   xSemaphoreGive(xBinarySemaphoreInternet); 
-    // }
-    Serial.print("Switch state change: ");
-    Serial.println(newState);
-    ledState = newState; // Cập nhật biến trạng thái (để code khác biết)
+      // Trả Token lại ngay
+      // Trả Token lại để người khác dùng
+      xSemaphoreGive(xBinarySemaphoreInternet); 
+    }
+    // Serial.print("Switch led state change: ");
+    // Serial.println(newState);
+    // ledState = newState; // Cập nhật biến trạng thái (để code khác biết)
     //digitalWrite(LED_PIN, ledState); // ĐIỀU KHIỂN LED NGAY LẬP TỨC
     tb.sendAttributeData(LED_STATE_ATTR, ledState); // Cập nhật trạng thái LED lên server
     return RPC_Response("setLedSwitchValue", newState);
+}
+
+RPC_Response setFanSwitchValue(const RPC_Data &data)
+{
+    Serial.println("Received Fan Switch state");
+    bool newState = data;
+    Serial.print("Switch fan state change: ");
+    Serial.println(newState);
+    fanState = newState; // Cập nhật biến trạng thái (để code khác biết)
+    tb.sendAttributeData(FAN_STATE_ATTR, fanState); // Cập nhật trạng thái LED lên server
+    return RPC_Response("setFanSwitchValue", newState);
 }
 
 // Mới thêm
@@ -76,13 +97,16 @@ RPC_Response getLedState(const RPC_Data &data)
     return RPC_Response("ledState", ledState);
 }
 
-// const std::array<RPC_Callback, 2U> callbacks = {
-//     RPC_Callback{"setLedSwitchValue", setLedSwitchValue},
-//     RPC_Callback{"getLedState", getLedState}};
+RPC_Response getFanState(const RPC_Data &data)
+{
+    return RPC_Response("fanState", fanState);
+}
 
-const std::array<RPC_Callback, 2U> callbacks = {
+const std::array<RPC_Callback, 4U> callbacks = {
     RPC_Callback{"led_status", setLedSwitchValue}, // <-- Sửa tên thành "led_status"
-    RPC_Callback{"led_status", getLedState}      // <-- Sửa tên thành "led_status"
+    RPC_Callback{"led_status", getLedState},      // <-- Sửa tên thành "led_status"
+    RPC_Callback{"fan_status", setFanSwitchValue}, // <-- Sửa tên thành "led_status"
+    RPC_Callback{"fan_status", getFanState}      // <-- Sửa tên thành "led_status"
 };
 
 const Shared_Attribute_Callback attributes_callback(&processSharedAttributes, SHARED_ATTRIBUTES_LIST.cbegin(), SHARED_ATTRIBUTES_LIST.cend());
@@ -169,8 +193,10 @@ void coreiot_task(void *pvParameters)
     if (tb.connected() && (millis() - lastTelemetrySend > telemetrySendInterval))
     {
       tb.sendTelemetryData("led_status", ledState);
+      tb.sendTelemetryData("fan_status", fanState);
       tb.sendTelemetryData("temperature", glob_temperature);
       tb.sendTelemetryData("humidity", glob_humidity);
+
       lastTelemetrySend = millis();
     }
     
@@ -178,25 +204,3 @@ void coreiot_task(void *pvParameters)
     vTaskDelay(pdMS_TO_TICKS(10)); 
   }
 }
-
-// void coreiot_task(void *pvParameters)
-// {
-//   (void)pvParameters; // Tắt cảnh báo
-
-//   Serial.println("CoreIOT Task: Dang cho WiFi...");
-//   vTaskDelay(pdMS_TO_TICKS(10000)); 
-
-//   Serial.println("CoreIOT Task: Bat dau.");
-
-//   while (1)
-//   {
-//     if (tb.connected())
-//     {
-//       tb.sendTelemetryData("led_status", ledState);
-//       tb.sendTelemetryData("temperature", glob_temperature);
-//       tb.sendTelemetryData("humidity", glob_humidity);
-//     }
-    
-//     vTaskDelay(pdMS_TO_TICKS(1000)); 
-//   }
-// }

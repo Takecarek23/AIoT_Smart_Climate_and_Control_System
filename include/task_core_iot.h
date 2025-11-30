@@ -12,5 +12,6 @@ void CORE_IOT_reconnect();
 void coreiot_task(void *pvParameters);
 
 extern volatile bool ledState;
+extern volatile bool fanState;
 
 #endif

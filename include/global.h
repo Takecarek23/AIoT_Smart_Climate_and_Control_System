@@ -9,7 +9,7 @@
 extern float glob_temperature;
 extern float glob_humidity;
 extern bool led_state;
-
+extern bool fan_state;
 extern String WIFI_SSID;
 extern String WIFI_PASS;
 extern String CORE_IOT_TOKEN;
