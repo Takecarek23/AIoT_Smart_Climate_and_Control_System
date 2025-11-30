@@ -1,7 +1,6 @@
 // ==================== WEBSOCKET & GLOBAL VARS ====================
 var gateway = `ws://${window.location.hostname}/ws`;
 var websocket;
-// Khai báo biến toàn cục
 var gaugeTemp; 
 var gaugeHumi;
 
@@ -10,7 +9,8 @@ window.addEventListener('load', onLoad);
 
 function onLoad(event) {
     initWebSocket();
-    initGauges(); // Gọi hàm khởi tạo đồng hồ
+    initGauges();
+    updateButtons();
 }
 
 function initWebSocket() {
@@ -69,7 +69,7 @@ function showSection(id, event) {
     if(event) event.currentTarget.classList.add('active');
 }
 
-// ==================== HOME GAUGES (QUAN TRỌNG: ĐÃ SỬA) ====================
+// ==================== HOME GAUGES ====================
 function initGauges() {
     gaugeTemp = new JustGage({
         id: "gauge_temp",
@@ -86,7 +86,7 @@ function initGauges() {
 
     gaugeHumi = new JustGage({
         id: "gauge_humi",
-        value: 0, // Giá trị mặc định
+        value: 0,
         min: 0,
         max: 100,
         donut: true,
@@ -98,66 +98,54 @@ function initGauges() {
     });
 }
 
-// ==================== DEVICE FUNCTIONS ====================
-function openAddRelayDialog() {
-    document.getElementById('addRelayDialog').style.display = 'flex';
-}
-function closeAddRelayDialog() {
-    document.getElementById('addRelayDialog').style.display = 'none';
-}
-function saveRelay() {
-    const name = document.getElementById('relayName').value.trim();
-    const gpio = document.getElementById('relayGPIO').value.trim();
-    if (!name || !gpio) return alert("⚠️ Please fill all fields!");
-    relayList.push({ id: Date.now(), name, gpio, state: false });
-    renderRelays();
-    closeAddRelayDialog();
-}
-function renderRelays() {
-    const container = document.getElementById('relayContainer');
-    container.innerHTML = "";
-    relayList.forEach(r => {
-        const card = document.createElement('div');
-        card.className = 'device-card';
-        card.innerHTML = `
-      <i class="fa-solid fa-bolt device-icon"></i>
-      <h3>${r.name}</h3>
-      <p>GPIO: ${r.gpio}</p>
-      <button class="toggle-btn ${r.state ? 'on' : ''}" onclick="toggleRelay(${r.id})">
-        ${r.state ? 'ON' : 'OFF'}
-      </button>
-      <i class="fa-solid fa-trash delete-icon" onclick="showDeleteDialog(${r.id})"></i>
-    `;
-        container.appendChild(card);
+// ==================== DEVICE FUNCTIONS (4 NÚT CỐ ĐỊNH) ====================
+
+// 1. Cấu hình danh sách thiết bị cố định
+var fixedDevices = [
+    { id: 0, name: "Dừng hoạt động",    gpio: 4,  state: false }, 
+    { id: 1, name: "Mức 1",             gpio: 5,  state: false }, 
+    { id: 2, name: "Mức 2",             gpio: 18, state: false }, 
+    { id: 3, name: "Chế độ tự động",    gpio: 19, state: false }  
+];
+
+// 2. Hàm cập nhật màu sắc nút bấm trên Web
+function updateButtons() {
+    fixedDevices.forEach((device, index) => {
+        var btn = document.getElementById(`btn-${index}`); // Tìm nút theo ID btn-0, btn-1...
+        if (btn) {
+            if (device.state) {
+                btn.classList.add("on"); // Thêm class màu xanh
+                btn.innerHTML = "ON";
+            } else {
+                btn.classList.remove("on"); // Bỏ class màu xanh (về màu xám)
+                btn.innerHTML = "OFF";
+            }
+        }
     });
 }
-function toggleRelay(id) {
-    const relay = relayList.find(r => r.id === id);
-    if (relay) {
-        relay.state = !relay.state;
-        const relayJSON = JSON.stringify({
-            page: "device",
-            value: {
-                name: relay.name,
-                status: relay.state ? "ON" : "OFF",
-                gpio: relay.gpio
-            }
-        });
-        Send_Data(relayJSON);
-        renderRelays();
-    }
-}
-function showDeleteDialog(id) {
-    deleteTarget = id;
-    document.getElementById('confirmDeleteDialog').style.display = 'flex';
-}
-function closeConfirmDelete() {
-    document.getElementById('confirmDeleteDialog').style.display = 'none';
-}
-function confirmDelete() {
-    relayList = relayList.filter(r => r.id !== deleteTarget);
-    renderRelays();
-    closeConfirmDelete();
+
+// 3. Hàm xử lý khi nhấn nút
+function toggleFixedDevice(index) {
+    var device = fixedDevices[index];
+    
+    // Đảo trạng thái (True thành False và ngược lại)
+    device.state = !device.state;
+
+    // Cập nhật màu nút ngay lập tức
+    updateButtons();
+
+    // Đóng gói dữ liệu JSON gửi xuống ESP32
+    // Format khớp với code C++: {"page":"device", "value":{"gpio":"4", "status":"ON"}}
+    var payload = JSON.stringify({
+        page: "device",
+        value: {
+            name: device.name,
+            gpio: String(device.gpio), 
+            status: device.state ? "ON" : "OFF"
+        }
+    });
+    
+    Send_Data(payload);
 }
 
 // ==================== SETTINGS FORM ====================

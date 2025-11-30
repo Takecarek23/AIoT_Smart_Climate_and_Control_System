@@ -56,6 +56,18 @@ void connnectWSV()
               {request->send(LittleFS, "/raphael.min.js", "application/javascript"); });
     server.on("/justgage.min.js", HTTP_GET, [](AsyncWebServerRequest *request)
               {request->send(LittleFS, "/justgage.min.js", "application/javascript"); });
+    server.on("/all.min.css", HTTP_GET, [](AsyncWebServerRequest *request)
+              {request->send(LittleFS, "/all.min.css", "text/css"); });
+    server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request)
+              {request->send(404); });
+
+    if (MDNS.begin("vinhandtrong")) { 
+        Serial.println("✅ mDNS responder started");
+        MDNS.addService("http", "tcp", 80);
+    } else {
+        Serial.println("❌ Error setting up MDNS responder!");
+    }
+
     server.begin();
     ElegantOTA.begin(&server);
     webserver_isrunning = true;
