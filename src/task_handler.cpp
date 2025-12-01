@@ -14,28 +14,6 @@ void handleWebSocketMessage(String message)
     JsonObject value = doc["value"];
     if (doc["page"] == "device")
     {
-        // if (!value.containsKey("gpio") || !value.containsKey("status"))
-        // {
-        //     Serial.println("⚠️ JSON thiếu thông tin gpio hoặc status");
-        //     return;
-        // }
-
-        // int gpio = value["gpio"];
-        // String status = value["status"].as<String>();
-
-        // Serial.printf("⚙️ Điều khiển GPIO %d → %s\n", gpio, status.c_str());
-        // pinMode(gpio, OUTPUT);
-        // if (status.equalsIgnoreCase("ON"))
-        // {
-        //     digitalWrite(gpio, HIGH);
-        //     Serial.printf("🔆 GPIO %d ON\n", gpio);
-        // }
-        // else if (status.equalsIgnoreCase("OFF"))
-        // {
-        //     digitalWrite(gpio, LOW);
-        //     Serial.printf("💤 GPIO %d OFF\n", gpio);
-        // }
-
         int gpio = doc["value"]["gpio"];
         String status = doc["value"]["status"];
 

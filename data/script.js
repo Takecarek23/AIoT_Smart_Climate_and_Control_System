@@ -104,7 +104,7 @@ var fanConfig = [
     { mode: 0, name: "Dừng",   gpio: 4, state: false }, // Không có GPIO riêng
     { mode: 1, name: "Mức 1",  gpio: 5, state: false }, // GPIO cho Mức 1
     { mode: 2, name: "Mức 2",  gpio: 18, state: false }, // GPIO cho Mức 2
-    { mode: 3, name: "Auto",   gpio: 18, state: false }  // GPIO cho Auto
+    { mode: 3, name: "Auto",   gpio: 19, state: false }  // GPIO cho Auto
 ];
 
 // 1. Hàm cập nhật giao diện (Chỉ 1 nút sáng, nút Dừng luôn tắt)
@@ -135,13 +135,6 @@ function controlFan(selectedIndex) {
         
         // Tắt trạng thái tất cả chế độ trong phần mềm
         fanConfig.forEach(f => f.state = false);
-        
-        // Gửi lệnh TẮT xuống TẤT CẢ các GPIO của quạt (để đảm bảo an toàn)
-        // fanConfig.forEach(item => {
-        //     if (item.gpio !== null) {
-        //         sendDeviceCommand(item.mode, item.gpio, "OFF");
-        //     }
-        // });
         sendDeviceCommand(0, 4, "ON");
         // Hiệu ứng nháy nút Dừng cho người dùng biết đã nhận lệnh
         var stopBtn = document.getElementById("btn-fan-0");

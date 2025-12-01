@@ -50,9 +50,9 @@ void task_monitor_button_fan(void *pvParameters) {
                     break;
 
                 case 3: // Chế độ Tự động (Dựa vào nhiệt độ)
-                    if (glob_temperature > 30.0) {
+                    if (result > 0.7) {
                         speed = 255; // Nóng quá -> Chạy max
-                    } else if (glob_temperature > 25.0) {
+                    } else if (result > 0.6) {
                         speed = 150; // Hơi nóng -> Chạy vừa
                     } else {
                         speed = 0;   // Mát -> Tắt
