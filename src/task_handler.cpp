@@ -36,7 +36,7 @@ void handleWebSocketMessage(String message)
         //     Serial.printf("💤 GPIO %d OFF\n", gpio);
         // }
 
-            int gpio = doc["value"]["gpio"];
+        int gpio = doc["value"]["gpio"];
         String status = doc["value"]["status"];
 
         Serial.printf("Web Control -> GPIO: %d | Status: %s\n", gpio, status.c_str());

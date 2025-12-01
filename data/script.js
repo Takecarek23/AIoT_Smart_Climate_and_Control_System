@@ -10,7 +10,7 @@ window.addEventListener('load', onLoad);
 function onLoad(event) {
     initWebSocket();
     initGauges();
-    updateButtons();
+    updateFanUI();
 }
 
 function initWebSocket() {
@@ -100,54 +100,96 @@ function initGauges() {
 
 // ==================== DEVICE FUNCTIONS (4 NÚT CỐ ĐỊNH) ====================
 
-// 1. Cấu hình danh sách thiết bị cố định
-var fixedDevices = [
-    { id: 0, name: "Dừng hoạt động",    gpio: 4,  state: false }, 
-    { id: 1, name: "Mức 1",             gpio: 5,  state: false }, 
-    { id: 2, name: "Mức 2",             gpio: 18, state: false }, 
-    { id: 3, name: "Chế độ tự động",    gpio: 19, state: false }  
+var fanConfig = [
+    { mode: 0, name: "Dừng",   gpio: 4, state: false }, // Không có GPIO riêng
+    { mode: 1, name: "Mức 1",  gpio: 5, state: false }, // GPIO cho Mức 1
+    { mode: 2, name: "Mức 2",  gpio: 18, state: false }, // GPIO cho Mức 2
+    { mode: 3, name: "Auto",   gpio: 18, state: false }  // GPIO cho Auto
 ];
 
-// 2. Hàm cập nhật màu sắc nút bấm trên Web
-function updateButtons() {
-    fixedDevices.forEach((device, index) => {
-        var btn = document.getElementById(`btn-${index}`); // Tìm nút theo ID btn-0, btn-1...
+// 1. Hàm cập nhật giao diện (Chỉ 1 nút sáng, nút Dừng luôn tắt)
+function updateFanUI() {
+    fanConfig.forEach((item, index) => {
+        if (index === 0) return; // Bỏ qua nút Dừng
+
+        var btn = document.getElementById(`btn-fan-${index}`);
         if (btn) {
-            if (device.state) {
-                btn.classList.add("on"); // Thêm class màu xanh
-                btn.innerHTML = "ON";
+            if (item.state) {
+                btn.classList.add("on");
+                btn.innerHTML = "ĐANG CHẠY";
             } else {
-                btn.classList.remove("on"); // Bỏ class màu xanh (về màu xám)
-                btn.innerHTML = "OFF";
+                btn.classList.remove("on");
+                btn.innerHTML = "CHỌN";
             }
         }
     });
 }
 
-// 3. Hàm xử lý khi nhấn nút
-function toggleFixedDevice(index) {
-    var device = fixedDevices[index];
+// 2. Hàm xử lý logic chính
+function controlFan(selectedIndex) {
     
-    // Đảo trạng thái (True thành False và ngược lại)
-    device.state = !device.state;
+    // TRƯỜNG HỢP 1: Bấm nút DỪNG (Index 0)
+    if (selectedIndex === 0) {
+        
+        console.log("🛑 Dừng toàn bộ hệ thống quạt");
+        
+        // Tắt trạng thái tất cả chế độ trong phần mềm
+        fanConfig.forEach(f => f.state = false);
+        
+        // Gửi lệnh TẮT xuống TẤT CẢ các GPIO của quạt (để đảm bảo an toàn)
+        // fanConfig.forEach(item => {
+        //     if (item.gpio !== null) {
+        //         sendDeviceCommand(item.mode, item.gpio, "OFF");
+        //     }
+        // });
+        sendDeviceCommand(0, 4, "ON");
+        // Hiệu ứng nháy nút Dừng cho người dùng biết đã nhận lệnh
+        var stopBtn = document.getElementById("btn-fan-0");
+        stopBtn.innerHTML = "ĐÃ DỪNG";
+        setTimeout(() => stopBtn.innerHTML = "KÍCH HOẠT", 1000);
+    } 
+    
+    // TRƯỜNG HỢP 2: Bấm nút Chế độ (1, 2, 3)
+    else {
+        // Tắt các chế độ khác, chỉ bật chế độ được chọn
+        fanConfig.forEach((item, index) => {
+            if (index === 0) {
+                
+                return;
+            }
 
-    // Cập nhật màu nút ngay lập tức
-    updateButtons();
+            if (index === selectedIndex) {
+                // Đây là chế độ vừa bấm -> BẬT
+                if (!item.state) { // Chỉ gửi lệnh nếu nó chưa bật
+                    item.state = true;
+                    sendDeviceCommand(item.mode, item.gpio, "ON");
+                }
+            } else {
+                // Đây là chế độ khác -> Phải TẮT (để đảm bảo chỉ 1 mức chạy)
+                if (item.state) {
+                    item.state = false;
+                    sendDeviceCommand(item.mode, item.gpio, "OFF");
+                }
+            }
+        });
+    }
 
-    // Đóng gói dữ liệu JSON gửi xuống ESP32
-    // Format khớp với code C++: {"page":"device", "value":{"gpio":"4", "status":"ON"}}
+    // Cập nhật màu sắc nút bấm
+    updateFanUI();
+}
+
+// Hàm phụ trợ để gửi JSON (Code cũ dùng lại)
+function sendDeviceCommand(mode, gpio, status) {
     var payload = JSON.stringify({
         page: "device",
         value: {
-            name: device.name,
-            gpio: String(device.gpio), 
-            status: device.state ? "ON" : "OFF"
+            name: mode,
+            gpio: String(gpio),
+            status: status
         }
     });
-    
     Send_Data(payload);
 }
-
 // ==================== SETTINGS FORM ====================
 document.getElementById("settingsForm").addEventListener("submit", function (e) {
     e.preventDefault();
