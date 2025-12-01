@@ -1,5 +1,5 @@
 #include "task_webserver.h"
-
+#include "global.h"
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 
@@ -88,3 +88,51 @@ void Webserver_reconnect()
     }
     ElegantOTA.loop();
 }
+
+
+// void handleWebSocketMessage(String message) {
+//     // 1. Tạo vùng nhớ JSON
+//     DynamicJsonDocument doc(1024);
+//     DeserializationError error = deserializeJson(doc, message);
+
+//     if (error) {
+//         Serial.print(F("deserializeJson() failed: "));
+//         Serial.println(error.f_str());
+//         return;
+//     }
+
+//     String page = doc["page"];
+
+//     if (page == "device") {
+//         int gpio = doc["value"]["gpio"];
+//         String status = doc["value"]["status"];
+
+//         Serial.printf("Web Control -> GPIO: %d | Status: %s\n", gpio, status.c_str());
+
+//         // Chỉ xử lý nếu trạng thái là ON (người dùng chọn chế độ đó)
+//         // Logic 4 chế độ quạt dựa trên GPIO ảo (4, 5, 18, 19)
+//         if (status == "ON") {
+//             switch (gpio) {
+//                 case 4:  // Web gửi GPIO 4 -> Chế độ Tắt
+//                     fanMode = 0;
+//                     Serial.println("=> MODE: Fan OFF");
+//                     break;
+//                 case 5:  // Web gửi GPIO 5 -> Mức 1
+//                     fanMode = 1;
+//                     Serial.println("=> MODE: Fan Level 1");
+//                     break;
+//                 case 18: // Web gửi GPIO 18 -> Mức 2
+//                     fanMode = 2;
+//                     Serial.println("=> MODE: Fan Level 2");
+//                     break;
+//                 case 19: // Web gửi GPIO 19 -> Auto
+//                     fanMode = 3;
+//                     Serial.println("=> MODE: Fan Auto");
+//                     break;
+//                 default:
+//                     Serial.println("=> Unknown GPIO command");
+//                     break;
+//             }
+//         }
+//     }
+// }
