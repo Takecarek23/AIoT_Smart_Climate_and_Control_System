@@ -3,6 +3,7 @@ float glob_temperature = 0;
 float glob_humidity = 0;
 bool led_state = false;
 bool fan_state = false;
+int fanMode = 0;
 
 String WIFI_SSID;
 String WIFI_PASS;

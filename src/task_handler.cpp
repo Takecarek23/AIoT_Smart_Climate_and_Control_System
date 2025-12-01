@@ -14,26 +14,57 @@ void handleWebSocketMessage(String message)
     JsonObject value = doc["value"];
     if (doc["page"] == "device")
     {
-        if (!value.containsKey("gpio") || !value.containsKey("status"))
-        {
-            Serial.println("⚠️ JSON thiếu thông tin gpio hoặc status");
-            return;
-        }
+        // if (!value.containsKey("gpio") || !value.containsKey("status"))
+        // {
+        //     Serial.println("⚠️ JSON thiếu thông tin gpio hoặc status");
+        //     return;
+        // }
 
-        int gpio = value["gpio"];
-        String status = value["status"].as<String>();
+        // int gpio = value["gpio"];
+        // String status = value["status"].as<String>();
 
-        Serial.printf("⚙️ Điều khiển GPIO %d → %s\n", gpio, status.c_str());
-        pinMode(gpio, OUTPUT);
-        if (status.equalsIgnoreCase("ON"))
-        {
-            digitalWrite(gpio, HIGH);
-            Serial.printf("🔆 GPIO %d ON\n", gpio);
-        }
-        else if (status.equalsIgnoreCase("OFF"))
-        {
-            digitalWrite(gpio, LOW);
-            Serial.printf("💤 GPIO %d OFF\n", gpio);
+        // Serial.printf("⚙️ Điều khiển GPIO %d → %s\n", gpio, status.c_str());
+        // pinMode(gpio, OUTPUT);
+        // if (status.equalsIgnoreCase("ON"))
+        // {
+        //     digitalWrite(gpio, HIGH);
+        //     Serial.printf("🔆 GPIO %d ON\n", gpio);
+        // }
+        // else if (status.equalsIgnoreCase("OFF"))
+        // {
+        //     digitalWrite(gpio, LOW);
+        //     Serial.printf("💤 GPIO %d OFF\n", gpio);
+        // }
+
+            int gpio = doc["value"]["gpio"];
+        String status = doc["value"]["status"];
+
+        Serial.printf("Web Control -> GPIO: %d | Status: %s\n", gpio, status.c_str());
+
+        // Chỉ xử lý nếu trạng thái là ON (người dùng chọn chế độ đó)
+        // Logic 4 chế độ quạt dựa trên GPIO ảo (4, 5, 18, 19)
+        if (status == "ON") {
+            switch (gpio) {
+                case 4:  // Web gửi GPIO 4 -> Chế độ Tắt
+                    fanMode = 0;
+                    Serial.println("=> MODE: Fan OFF");
+                    break;
+                case 5:  // Web gửi GPIO 5 -> Mức 1
+                    fanMode = 1;
+                    Serial.println("=> MODE: Fan Level 1");
+                    break;
+                case 18: // Web gửi GPIO 18 -> Mức 2
+                    fanMode = 2;
+                    Serial.println("=> MODE: Fan Level 2");
+                    break;
+                case 19: // Web gửi GPIO 19 -> Auto
+                    fanMode = 3;
+                    Serial.println("=> MODE: Fan Auto");
+                    break;
+                default:
+                    Serial.println("=> Unknown GPIO command");
+                    break;
+            }
         }
     }
     else if (doc["page"] == "setting")
