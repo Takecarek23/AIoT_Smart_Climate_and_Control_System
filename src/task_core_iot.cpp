@@ -64,18 +64,10 @@ RPC_Response setLedSwitchValue(const RPC_Data &data)
     bool newState = data;
     // // xin lấy token 
     if (xSemaphoreTake(xBinarySemaphoreInternet, (TickType_t)10) == pdTRUE) {
-      // Đã lấy được quyền -> Điều khiển LED
       ledState = newState;
       digitalWrite(LED_PIN, ledState);
-      
-      // Trả Token lại ngay
-      // Trả Token lại để người khác dùng
       xSemaphoreGive(xBinarySemaphoreInternet); 
     }
-    // Serial.print("Switch led state change: ");
-    // Serial.println(newState);
-    // ledState = newState; // Cập nhật biến trạng thái (để code khác biết)
-    //digitalWrite(LED_PIN, ledState); // ĐIỀU KHIỂN LED NGAY LẬP TỨC
     tb.sendAttributeData(LED_STATE_ATTR, ledState); // Cập nhật trạng thái LED lên server
     return RPC_Response("setLedSwitchValue", newState);
 }
@@ -103,10 +95,10 @@ RPC_Response getFanState(const RPC_Data &data)
 }
 
 const std::array<RPC_Callback, 4U> callbacks = {
-    RPC_Callback{"led_status", setLedSwitchValue}, // <-- Sửa tên thành "led_status"
-    RPC_Callback{"led_status", getLedState},      // <-- Sửa tên thành "led_status"
-    RPC_Callback{"fan_status", setFanSwitchValue}, // <-- Sửa tên thành "led_status"
-    RPC_Callback{"fan_status", getFanState}      // <-- Sửa tên thành "led_status"
+    RPC_Callback{"led_status", setLedSwitchValue}, 
+    RPC_Callback{"led_status", getLedState},     
+    RPC_Callback{"fan_status", setFanSwitchValue},
+    RPC_Callback{"fan_status", getFanState}    
 };
 
 const Shared_Attribute_Callback attributes_callback(&processSharedAttributes, SHARED_ATTRIBUTES_LIST.cbegin(), SHARED_ATTRIBUTES_LIST.cend());

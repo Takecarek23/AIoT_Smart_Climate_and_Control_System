@@ -1,6 +1,6 @@
-#include "led_button.h"
+#include "task_button.h"
 
-void task_monitor_button(void *pvParameters)
+void task_monitor_button_led(void *pvParameters)
 {
     pinMode(LED_PIN, OUTPUT);
     while (1) {
@@ -13,18 +13,6 @@ void task_monitor_button(void *pvParameters)
     }
 }
 
-// Khi nhấn nút thì đèn sáng, không thì led blinky cứ nằm chờ
-
-// void task_monitor_button_fan(void *pvParameters) {
-//     while (1) {
-//         if (xSemaphoreTake(xBinarySemaphoreInternet, (TickType_t)10) == pdTRUE) {
-//             analogWrite(GPIO_NUM_6, fanState*150);
-//             xSemaphoreGive(xBinarySemaphoreInternet); 
-//         }
-//         vTaskDelay(pdMS_TO_TICKS(10));
-//     }
-// }
-
 void task_monitor_button_fan(void *pvParameters) {
     // Cấu hình chân quạt
     pinMode(GPIO_NUM_6, OUTPUT);
@@ -32,7 +20,7 @@ void task_monitor_button_fan(void *pvParameters) {
 
     while (1) {
         // Sử dụng Semaphore nếu cần bảo vệ tài nguyên (tùy chọn)
-        // if (xSemaphoreTake(xBinarySemaphoreInternet, (TickType_t)10) == pdTRUE) {
+        if (xSemaphoreTake(xBinarySemaphoreInternet, (TickType_t)10) == pdTRUE) {
             
             int speed = 0;
 
@@ -49,7 +37,7 @@ void task_monitor_button_fan(void *pvParameters) {
                     speed = 255; // Tối đa
                     break;
 
-                case 3: // Chế độ Tự động (Dựa vào nhiệt độ)
+                case 3: // Chế độ Tự động (Dựa vào TinyML)
                     if (result > 0.7) {
                         speed = 255; // Nóng quá -> Chạy max
                     } else if (result > 0.6) {
@@ -57,8 +45,6 @@ void task_monitor_button_fan(void *pvParameters) {
                     } else {
                         speed = 0;   // Mát -> Tắt
                     }
-                    // Debug chế độ Auto
-                    // Serial.printf("Auto Mode: Temp=%.1f -> Speed=%d\n", glob_temperature, speed);
                     break;
             }
 
@@ -66,8 +52,8 @@ void task_monitor_button_fan(void *pvParameters) {
             analogWrite(GPIO_NUM_6, speed);
 
             // Trả Token
-            // xSemaphoreGive(xBinarySemaphoreInternet); 
-        // }
+            xSemaphoreGive(xBinarySemaphoreInternet); 
+        }
         vTaskDelay(pdMS_TO_TICKS(100));
     }
 }

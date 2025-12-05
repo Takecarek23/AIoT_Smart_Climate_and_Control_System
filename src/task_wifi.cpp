@@ -3,7 +3,6 @@
 void startAP()
 {
     WiFi.mode(WIFI_AP_STA);
-    //WiFi.mode(WIFI_AP);
     WiFi.softAP(String(SSID_AP), String(PASS_AP));
     Serial.print("AP IP: ");
     Serial.println(WiFi.softAPIP());
@@ -16,8 +15,6 @@ void startSTA()
         vTaskDelete(NULL);
     }
 
-    // WiFi.mode(WIFI_STA);
-
     if (WIFI_PASS.isEmpty())
     {
         WiFi.begin(WIFI_SSID.c_str());
@@ -26,15 +23,6 @@ void startSTA()
     {
         WiFi.begin(WIFI_SSID.c_str(), WIFI_PASS.c_str());
     }
-
-
-    // while (WiFi.status() != WL_CONNECTED)
-    // {
-    //     vTaskDelay(100 / portTICK_PERIOD_MS);
-    // }
-    // //Give a semaphore here
-    // xSemaphoreGive(xBinarySemaphoreInternet);
-
 
     int timeout = 0;
     while (WiFi.status() != WL_CONNECTED && timeout < 200)
